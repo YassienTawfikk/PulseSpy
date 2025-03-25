@@ -1,0 +1,33 @@
+app
+│
+├── design
+│   ├── ui
+│   │   └── design.ui
+│   │
+│   └── design.py
+│
+├── services
+│   └── upload_signal.py
+│
+├── utils
+│   └── clean_cache.py
+│
+└── controller.py
+
+static
+│
+├── datasets
+│   ├── ECG_Person_01_rec_1_raw.csv
+│   ├── ECG_Person_02_rec_10_raw.csv
+│   ├── ECG_Person_45_rec_2_raw.csv
+│   ├── ECG_Person_86_rec_1_raw.csv
+│   └── ECG_Person_90_rec_2_raw.csv
+│
+├── docs
+│   └── OOP Structure.txt
+│
+└── images
+    ├── Patient-Monitor-Software.jpg
+    └── icon.png
+
+main.py

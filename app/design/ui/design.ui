@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1440</width>
+                <height>900</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>MainWindow</string>
+        </property>
+        <property name="styleSheet">
+            <string notr="true">background-color:black</string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <widget class="QWidget" name="horizontalLayoutWidget">
+                <property name="geometry">
+                    <rect>
+                        <x>60</x>
+                        <y>730</y>
+                        <width>1321</width>
+                        <height>141</height>
+                    </rect>
+                </property>
+                <layout class="QHBoxLayout" name="controller_buttons_layout_2">
+                    <item>
+                        <widget class="QPushButton" name="toggle_alarm_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>120</width>
+                                    <height>90</height>
+                                </size>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: white;
+                                    border: none;
+                                    text-align: center;
+                                    text-decoration: none;
+                                    font-size: 16px;
+                                    margin: 4px 2px;
+                                    border-radius: 8px;
+                                    border:1px solid white;
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>Alarm
+                                    OFF
+                                </string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="pause_alarm_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>120</width>
+                                    <height>90</height>
+                                </size>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: white;
+                                    border: none;
+                                    text-align: center;
+                                    text-decoration: none;
+                                    font-size: 16px;
+                                    margin: 4px 2px;
+                                    border-radius: 8px;
+                                    border:1px solid white;
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>Alarm Pause</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="upload_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>120</width>
+                                    <height>90</height>
+                                </size>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: white;
+                                    border: none;
+                                    text-align: center;
+                                    text-decoration: none;
+                                    font-size: 16px;
+                                    margin: 4px 2px;
+                                    border-radius: 8px;
+                                    border:1px solid white;
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>Upload</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="toggle_play_pause_signal_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>120</width>
+                                    <height>90</height>
+                                </size>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: white;
+                                    border: none;
+                                    text-align: center;
+                                    text-decoration: none;
+                                    font-size: 16px;
+                                    margin: 4px 2px;
+                                    border-radius: 8px;
+                                    border:1px solid white;
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>Play</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="reset_signal_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>120</width>
+                                    <height>90</height>
+                                </size>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: white;
+                                    border: none;
+                                    text-align: center;
+                                    text-decoration: none;
+                                    font-size: 16px;
+                                    margin: 4px 2px;
+                                    border-radius: 8px;
+                                    border:1px solid white;
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>Reset</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="clear_signal_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>120</width>
+                                    <height>90</height>
+                                </size>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: white;
+                                    border: none;
+                                    text-align: center;
+                                    text-decoration: none;
+                                    font-size: 16px;
+                                    margin: 4px 2px;
+                                    border-radius: 8px;
+                                    border:1px solid white;
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>Clear</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QPushButton" name="quit_app_button_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>70</width>
+                                    <height>70</height>
+                                </size>
+                            </property>
+                            <property name="font">
+                                <font>
+                                    <family>Hiragino Sans GB</family>
+                                    <pointsize>50</pointsize>
+                                    <weight>75</weight>
+                                    <italic>false</italic>
+                                    <bold>true</bold>
+                                    <underline>false</underline>
+                                    <strikeout>false</strikeout>
+                                    <kerning>false</kerning>
+                                </font>
+                            </property>
+                            <property name="cursor">
+                                <cursorShape>PointingHandCursor</cursorShape>
+                            </property>
+                            <property name="layoutDirection">
+                                <enum>Qt::LeftToRight</enum>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">QPushButton {
+                                    color: rgb(255, 255, 255);
+
+                                    border: 3px solid rgb(255, 255, 255);
+                                    }
+                                    QPushButton:hover {
+                                    border-color:rgb(253, 94, 80);
+                                    color:rgb(253, 94, 80);
+                                    }
+                                </string>
+                            </property>
+                            <property name="text">
+                                <string>X</string>
+                            </property>
+                            <property name="iconSize">
+                                <size>
+                                    <width>25</width>
+                                    <height>16</height>
+                                </size>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </widget>
+            <widget class="QWidget" name="horizontalLayoutWidget_2">
+                <property name="geometry">
+                    <rect>
+                        <x>10</x>
+                        <y>170</y>
+                        <width>1401</width>
+                        <height>481</height>
+                    </rect>
+                </property>
+                <layout class="QHBoxLayout" name="groupboxes_layout_2">
+                    <item>
+                        <widget class="QGroupBox" name="ecg_groupbox_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>1170</width>
+                                    <height>340</height>
+                                </size>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">color:white</string>
+                            </property>
+                            <property name="title">
+                                <string>ECG</string>
+                            </property>
+                        </widget>
+                    </item>
+                    <item>
+                        <widget class="QGroupBox" name="heart_rate_groupbox_2">
+                            <property name="maximumSize">
+                                <size>
+                                    <width>230</width>
+                                    <height>340</height>
+                                </size>
+                            </property>
+                            <property name="styleSheet">
+                                <string notr="true">color:white</string>
+                            </property>
+                            <property name="title">
+                                <string>Heart Rate</string>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </widget>
+            <widget class="QWidget" name="Header" native="true">
+                <property name="geometry">
+                    <rect>
+                        <x>-1</x>
+                        <y>0</y>
+                        <width>1441</width>
+                        <height>91</height>
+                    </rect>
+                </property>
+                <property name="styleSheet">
+                    <string notr="true">background-color:#2b2d2c;</string>
+                </property>
+                <widget class="QWidget" name="verticalLayoutWidget_2">
+                    <property name="geometry">
+                        <rect>
+                            <x>1350</x>
+                            <y>0</y>
+                            <width>72</width>
+                            <height>91</height>
+                        </rect>
+                    </property>
+                    <layout class="QVBoxLayout" name="title_layout_2">
+                        <item>
+                            <widget class="QLabel" name="icon_label_2">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>60</width>
+                                        <height>60</height>
+                                    </size>
+                                </property>
+                                <property name="layoutDirection">
+                                    <enum>Qt::LeftToRight</enum>
+                                </property>
+                                <property name="text">
+                                    <string/>
+                                </property>
+                                <property name="pixmap">
+                                    <pixmap>../../../static/icons/icon.png</pixmap>
+                                </property>
+                                <property name="scaledContents">
+                                    <bool>true</bool>
+                                </property>
+                                <property name="alignment">
+                                    <set>Qt::AlignCenter</set>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="title_label_2">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>70</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <family>Luminari</family>
+                                        <pointsize>15</pointsize>
+                                        <weight>50</weight>
+                                        <italic>true</italic>
+                                        <bold>false</bold>
+                                        <underline>false</underline>
+                                        <kerning>false</kerning>
+                                    </font>
+                                </property>
+                                <property name="layoutDirection">
+                                    <enum>Qt::LeftToRight</enum>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">color:white</string>
+                                </property>
+                                <property name="text">
+                                    <string>Pulse Spy</string>
+                                </property>
+                                <property name="alignment">
+                                    <set>Qt::AlignCenter</set>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </widget>
+                <widget class="QWidget" name="horizontalLayoutWidget_4">
+                    <property name="geometry">
+                        <rect>
+                            <x>40</x>
+                            <y>9</y>
+                            <width>1241</width>
+                            <height>81</height>
+                        </rect>
+                    </property>
+                    <layout class="QHBoxLayout" name="header_layout_2">
+                        <item>
+                            <widget class="QLabel" name="time_label_2">
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>0</width>
+                                        <height>0</height>
+                                    </size>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>80</width>
+                                        <height>70</height>
+                                    </size>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <weight>75</weight>
+                                        <italic>true</italic>
+                                        <bold>true</bold>
+                                    </font>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">color:white</string>
+                                </property>
+                                <property name="text">
+                                    <string>08:39 AM</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="person_data_label_2">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>410</width>
+                                        <height>70</height>
+                                    </size>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <weight>75</weight>
+                                        <italic>true</italic>
+                                        <bold>true</bold>
+                                    </font>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">color:white</string>
+                                </property>
+                                <property name="text">
+                                    <string>Patient: Darcy Colby, 30 Male (Height: 178 cm, Weight: 77.0 kg</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="diagnosis_label_2">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>410</width>
+                                        <height>70</height>
+                                    </size>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <weight>75</weight>
+                                        <italic>true</italic>
+                                        <bold>true</bold>
+                                    </font>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">color:white</string>
+                                </property>
+                                <property name="text">
+                                    <string>Detection: Bradychardia</string>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </widget>
+            </widget>
+        </widget>
+        <widget class="QStatusBar" name="statusbar"/>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>
