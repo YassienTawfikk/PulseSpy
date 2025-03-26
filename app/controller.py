@@ -2,14 +2,13 @@ from PyQt5 import QtWidgets
 from app.utils.clean_cache import remove_directories
 from app.design.design import Ui_MainWindow
 from app.services.upload_signal import SignalFileUploader
-from app.services.playbackworker import PlaybackWorker
+from app.services.playback_worker import PlaybackWorker
 from pyqtgraph import mkPen
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks, butter, filtfilt
 import time
-import threading
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
+from PyQt5.QtCore import QThread
 
 
 class MainWindowController:
@@ -35,6 +34,13 @@ class MainWindowController:
         self.playback_thread = None
         self.current_index = 0
         self.sampling_rate = 250  # Default sampling rate in Hz
+
+        # Heart rate calculation
+        self.current_heart_rate = 0
+        self.heart_rate_history = []
+        self.last_peak_time = 0
+
+        self.ui.heart_rate_widget.setText("--")
 
         self.setup_connections()
         self.setup_plot()
@@ -85,11 +91,35 @@ class MainWindowController:
                 height=np.mean(self.filtered_signal) + 2 * np.std(self.filtered_signal),
                 distance=self.sampling_rate * 0.2  # Minimum 200ms between peaks
             )
+            # Calculate initial heart rate
+            self.calculate_heart_rate()
 
             # Plot initial signal
             self.plot_signal()
         except Exception as e:
             print(f"Processing error: {e}")
+
+    def calculate_heart_rate(self):
+        """Calculate heart rate from detected peaks."""
+        if self.qrs_peaks is None or len(self.qrs_peaks) < 2:
+            self.current_heart_rate = 0
+            return
+
+        # Calculate RR intervals (time between peaks in seconds)
+        rr_intervals = np.diff(self.x_data[self.qrs_peaks])
+
+        # Filter out unrealistic intervals (e.g., <0.3s or >1.5s)
+        valid_intervals = rr_intervals[(rr_intervals > 0.3) & (rr_intervals < 1.5)]
+
+        if len(valid_intervals) > 0:
+            # Calculate average heart rate in BPM
+            avg_rr = np.mean(valid_intervals)
+            self.current_heart_rate = 60 / avg_rr
+        else:
+            self.current_heart_rate = 0
+
+        # Store for history
+        self.heart_rate_history.append(self.current_heart_rate)
 
     def butter_lowpass_filter(self, data, cutoff, fs, order=4):
         """Apply Butterworth lowpass filter."""
@@ -183,12 +213,48 @@ class MainWindowController:
         self.current_index = current_pos
         self.plot_signal(current_pos)
 
+        # Check if we've passed any new peaks
+        if self.qrs_peaks is not None and len(self.qrs_peaks) > 0:
+            # Find all peaks that have been passed (index <= current_pos)
+            passed_peaks = [p for p in self.qrs_peaks if p <= current_pos]
+
+            # If we have passed at least 2 peaks, calculate heart rate
+            if len(passed_peaks) >= 2:
+                # Get the last two passed peaks
+                last_two_peaks = passed_peaks[-2:]
+                rr_interval = self.x_data[last_two_peaks[1]] - self.x_data[last_two_peaks[0]]
+
+                # Calculate instant heart rate (not average)
+                if 0.3 < rr_interval < 1.5:  # Valid RR interval range
+                    self.current_heart_rate = 60 / rr_interval
+                    self.update_heart_rate_display()
+
         # Auto-scroll window
         if self.current_index < len(self.x_data):
             current_time = self.x_data[self.current_index]
             if current_time > self.current_window_start + self.window_size:
                 self.current_window_start = current_time - self.window_size / 2
                 self.plot_signal(current_pos)
+
+    def update_heart_rate_display(self):
+        """Update the heart rate widget with current value."""
+        if hasattr(self.ui, 'heart_rate_widget'):
+            # Convert to integer and format as string
+            hr_text = str(int(round(self.current_heart_rate)))
+            self.ui.heart_rate_widget.setText(hr_text)
+
+            # Force immediate update
+            self.ui.heart_rate_widget.repaint()
+
+            # Color coding "font": font_large,
+            if self.current_heart_rate > 100:
+                style = "color: red; font-size: 100px; font-weight: bold;"
+            elif self.current_heart_rate < 60:
+                style = "color: blue; font-size: 100px; font-weight: bold;"
+            else:
+                style = "color: green; font-size: 100px; font-weight: bold;"
+
+            self.ui.heart_rate_widget.setStyleSheet(style)
 
     def stop_playback(self):
         """Stop signal playback safely."""
@@ -227,7 +293,11 @@ class MainWindowController:
         self.y_data = None
         self.filtered_signal = None
         self.qrs_peaks = None
-        self.current_window_start = 0  # Reset window position
+        self.current_window_start = 0
+        self.current_heart_rate = 0
+        self.heart_rate_history = []
+        self.last_peak_time = 0
+        self.update_heart_rate_display()  # Reset display
 
     def run(self):
         """Start the application."""
