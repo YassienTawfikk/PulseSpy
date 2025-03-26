@@ -43,14 +43,6 @@ class MainWindowController:
         self.ui.heart_rate_widget.setText("--")
 
         self.setup_connections()
-        self.setup_plot()
-
-    def setup_plot(self):
-        """Initialize plot settings."""
-        self.ui.ecg_plot_widget.setLabel('left', 'Amplitude (mV)')
-        self.ui.ecg_plot_widget.setLabel('bottom', 'Time (s)')
-        self.ui.ecg_plot_widget.showGrid(x=True, y=True)
-        self.ui.ecg_plot_widget.addLegend()
 
     def setup_connections(self):
         """Connect UI signals to slots."""
@@ -148,7 +140,7 @@ class MainWindowController:
         self.ui.ecg_plot_widget.plot(
             x_window,
             y_window,
-            pen=mkPen('#033500', width=1),
+            pen=mkPen('#033500', width=3),
             name='ECG Signal'
         )
 
@@ -297,7 +289,7 @@ class MainWindowController:
         self.current_heart_rate = 0
         self.heart_rate_history = []
         self.last_peak_time = 0
-        self.update_heart_rate_display()  # Reset display
+        self.update_heart_rate_display()
 
     def run(self):
         """Start the application."""
@@ -306,5 +298,6 @@ class MainWindowController:
 
     def close_app(self):
         """Clean up and exit."""
-        self.stop_playback()
+        # self.stop_playback()
         self.app.quit()
+        remove_directories()

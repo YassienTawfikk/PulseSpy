@@ -143,7 +143,11 @@ class Ui_MainWindow(object):
         plot_widget.getAxis('bottom').setTicks([])
         plot_widget.getAxis('left').setPen(None)
         plot_widget.getAxis('bottom').setPen(None)
+        plot_widget.setLabel('left', 'mV')
 
+        color = pg.mkPen('#033500')
+        plot_widget.getAxis('left').setTextPen(color)
+        plot_widget.addLegend()
         graph_layout = QtWidgets.QVBoxLayout()
         graph_layout.addWidget(plot_widget)
         graph_layout.setContentsMargins(5, 25, 5, 5)
