@@ -211,6 +211,11 @@ class MainWindowController:
     def update_playback_position(self, current_pos):
         """Slot to update playback position (runs in main thread)."""
         self.current_index = current_pos
+
+        # Calculate window bounds based on current position
+        self.current_window_start = max(0, self.x_data[current_pos] - self.window_size)
+
+        # Plot the signal for the current window
         self.plot_signal(current_pos)
 
         # Check if we've passed any new peaks
@@ -233,8 +238,7 @@ class MainWindowController:
         if self.current_index < len(self.x_data):
             current_time = self.x_data[self.current_index]
             if current_time > self.current_window_start + self.window_size:
-                self.current_window_start = current_time - self.window_size / 2
-                self.plot_signal(current_pos)
+                self.current_window_start = current_time - self.window_size
 
     def update_heart_rate_display(self):
         """Update the heart rate widget with current value."""
