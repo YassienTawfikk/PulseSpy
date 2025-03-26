@@ -141,7 +141,6 @@ class MainWindowController:
             x_window,
             y_window,
             pen=mkPen('#033500', width=3),
-            name='ECG Signal'
         )
 
         # Highlight playback position if provided
@@ -170,7 +169,6 @@ class MainWindowController:
                     symbol='x',
                     symbolSize=8,
                     symbolBrush='r',
-                    name='QRS Peaks'
                 )
 
         # Set fixed X range and auto Y range

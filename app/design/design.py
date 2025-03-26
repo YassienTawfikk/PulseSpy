@@ -147,7 +147,6 @@ class Ui_MainWindow(object):
 
         color = pg.mkPen('#033500')
         plot_widget.getAxis('left').setTextPen(color)
-        plot_widget.addLegend()
         graph_layout = QtWidgets.QVBoxLayout()
         graph_layout.addWidget(plot_widget)
         graph_layout.setContentsMargins(5, 25, 5, 5)
