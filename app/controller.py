@@ -2,12 +2,15 @@ from PyQt5 import QtWidgets
 from app.utils.clean_cache import remove_directories
 from app.design.design import Ui_MainWindow
 from app.services.upload_signal import SignalFileUploader
+from app.services.playbackworker import PlaybackWorker
 from pyqtgraph import mkPen
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks, butter, filtfilt
 import time
 import threading
+from PyQt5.QtCore import pyqtSignal, QObject, QThread
+
 
 class MainWindowController:
     def __init__(self):
@@ -16,113 +19,222 @@ class MainWindowController:
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self.MainWindow)
         self.service = SignalFileUploader()
-        self.setupConnections()
 
+        # Window settings
+        self.window_size = 5.0  # seconds of signal to display
+        self.current_window_start = 0  # starting time of current window
+
+        # Signal data
         self.x_data = None
         self.y_data = None
+        self.filtered_signal = None
+        self.qrs_peaks = None
+
+        # Playback control
         self.is_playing = False
         self.playback_thread = None
-        self.current_index = 0  # To keep track of the current position in the signal
+        self.current_index = 0
+        self.sampling_rate = 250  # Default sampling rate in Hz
 
-    def setupConnections(self):
-        self.ui.quit_app_button.clicked.connect(self.closeApp)
+        self.setup_connections()
+        self.setup_plot()
+
+    def setup_plot(self):
+        """Initialize plot settings."""
+        self.ui.ecg_plot_widget.setLabel('left', 'Amplitude (mV)')
+        self.ui.ecg_plot_widget.setLabel('bottom', 'Time (s)')
+        self.ui.ecg_plot_widget.showGrid(x=True, y=True)
+        self.ui.ecg_plot_widget.addLegend()
+
+    def setup_connections(self):
+        """Connect UI signals to slots."""
         self.ui.upload_button.clicked.connect(self.upload_signal)
         self.ui.clear_signal_button.clicked.connect(self.clear_signal)
         self.ui.toggle_play_pause_signal_button.clicked.connect(self.toggle_play_pause_signal)
+        self.ui.quit_app_button.clicked.connect(self.close_app)
 
     def upload_signal(self):
-        filepath = self.service.upload_signal_csv()
-        if filepath:
-            self.x_data, self.y_data = self.service.load_csv_data(filepath)
-            if self.x_data is not None and self.y_data is not None:
-                self.process_ecg_signal(self.y_data)  # Process the ECG data
+        """Handle file upload and processing."""
+        filepath = self.service.upload_signal_file()
+        if not filepath:
+            return
+
+        x_data, y_data, _ = self.service.load_signal_data(filepath)
+        if x_data is not None and y_data is not None:
+            self.x_data = x_data
+            self.y_data = y_data
+            self.process_ecg_signal(y_data)
 
     def process_ecg_signal(self, ecg_signal):
-        # Filter the signal to extract QRS
-        fs = 1.0  # Sampling frequency (adjust as necessary)
-        cutoff = 0.1  # Cut-off frequency for low-pass filter
-        filtered_signal = self.butter_lowpass_filter(ecg_signal, cutoff, fs)
+        """Process and plot ECG signal."""
+        try:
+            # Estimate sampling rate if not available
+            if len(self.x_data) > 1:
+                self.sampling_rate = 1 / (self.x_data[1] - self.x_data[0])
 
-        # Find QRS peaks
-        self.qrs_peaks = self.find_qrs_peaks(filtered_signal)
+            # Filter and find peaks
+            self.filtered_signal = self.butter_lowpass_filter(
+                ecg_signal,
+                cutoff=15,  # Appropriate for QRS detection
+                fs=self.sampling_rate
+            )
 
-        # Smooth the signal
-        self.smoothed_signal = self.moving_average(filtered_signal, window_size=5)
+            # Find peaks with ECG-specific parameters
+            self.qrs_peaks, _ = find_peaks(
+                self.filtered_signal,
+                height=np.mean(self.filtered_signal) + 2 * np.std(self.filtered_signal),
+                distance=self.sampling_rate * 0.2  # Minimum 200ms between peaks
+            )
 
-        # Plot the signals
-        self.plot_signals(self.smoothed_signal, self.qrs_peaks)
+            # Plot initial signal
+            self.plot_signal()
+        except Exception as e:
+            print(f"Processing error: {e}")
 
-    def butter_lowpass_filter(self, data, cutoff, fs, order=5):
+    def butter_lowpass_filter(self, data, cutoff, fs, order=4):
+        """Apply Butterworth lowpass filter."""
         nyq = 0.5 * fs
         normal_cutoff = cutoff / nyq
         b, a = butter(order, normal_cutoff, btype='low', analog=False)
         return filtfilt(b, a, data)
 
-    def find_qrs_peaks(self, signal):
-        peaks, _ = find_peaks(signal, height=0.5)
-        return peaks
+    def plot_signal(self, current_pos=None):
+        """Plot ECG signal within the fixed window."""
+        self.ui.ecg_plot_widget.clear()
 
-    def moving_average(self, data, window_size):
-        return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
+        if self.filtered_signal is None or self.x_data is None:
+            return
 
-    def plot_signals(self, smoothed_signal, qrs_peaks):
-        try:
-            self.ui.ecg_plot_widget.clear()
-            # Plot smoothed signal
-            self.ui.ecg_plot_widget.plot(smoothed_signal, pen=mkPen('g', width=1), name='Smoothed Signal')
+        # Calculate window bounds
+        window_start = self.current_window_start
+        window_end = window_start + self.window_size
 
+        # Get indices for the current window
+        mask = (self.x_data >= window_start) & (self.x_data <= window_end)
+        x_window = self.x_data[mask]
+        y_window = self.filtered_signal[mask]
 
-        except Exception as e:
-            print(f"Failed to plot signals: {e}")
+        # Plot the windowed signal
+        self.ui.ecg_plot_widget.plot(
+            x_window,
+            y_window,
+            pen=mkPen('#033500', width=1),
+            name='ECG Signal'
+        )
 
-    def clear_signal(self):
-        try:
-            self.ui.ecg_plot_widget.clear()
-            print("Signal cleared successfully.")
-            self.is_playing = False
-            self.current_index = 0
-            self.ui.toggle_play_pause_signal_button.setText("Play")
-        except Exception as e:
-            print(f"Failed to clear the signal: {e}")
+        # Highlight playback position if provided
+        if current_pos is not None and current_pos > 0 and current_pos < len(self.x_data):
+            mask_played = (self.x_data[:current_pos] >= window_start) & (self.x_data[:current_pos] <= window_end)
+            self.ui.ecg_plot_widget.plot(
+                self.x_data[:current_pos][mask_played],
+                self.filtered_signal[:current_pos][mask_played],
+                pen=mkPen('#55b135', width=2),
+                name='Playback'
+            )
+
+        # Plot peaks within window - with additional validation
+        if self.qrs_peaks is not None:
+            valid_peaks = []
+            for p in self.qrs_peaks:
+                if (p < len(self.x_data) and
+                        window_start <= self.x_data[p] <= window_end):
+                    valid_peaks.append(p)
+
+            if valid_peaks:
+                self.ui.ecg_plot_widget.plot(
+                    self.x_data[valid_peaks],
+                    self.filtered_signal[valid_peaks],
+                    pen=None,
+                    symbol='x',
+                    symbolSize=8,
+                    symbolBrush='r',
+                    name='QRS Peaks'
+                )
+
+        # Set fixed X range and auto Y range
+        self.ui.ecg_plot_widget.setXRange(window_start, window_end)
+        self.ui.ecg_plot_widget.enableAutoRange(axis='y')
 
     def toggle_play_pause_signal(self):
+        """Toggle signal playback."""
         if not self.is_playing:
-            self.is_playing = True
-            self.ui.toggle_play_pause_signal_button.setText("Pause")
-            self.playback_thread = threading.Thread(target=self.play_signal)
-            self.playback_thread.start()
+            self.start_playback()
         else:
-            self.is_playing = False
-            self.ui.toggle_play_pause_signal_button.setText("Play")
+            self.stop_playback()
+
+    def start_playback(self):
+        """Start signal playback using QThread."""
+        if self.filtered_signal is None:
+            return
+
+        self.is_playing = True
+        self.ui.toggle_play_pause_signal_button.setText("Pause")
+
+        self.playback_thread = QThread()
+        self.worker = PlaybackWorker(self)
+        self.worker.moveToThread(self.playback_thread)
+        self.worker.update_signal.connect(self.update_playback_position)
+
+        self.playback_thread.started.connect(self.worker.run)
+        self.playback_thread.start()
+
+    def update_playback_position(self, current_pos):
+        """Slot to update playback position (runs in main thread)."""
+        self.current_index = current_pos
+        self.plot_signal(current_pos)
+
+        # Auto-scroll window
+        if self.current_index < len(self.x_data):
+            current_time = self.x_data[self.current_index]
+            if current_time > self.current_window_start + self.window_size:
+                self.current_window_start = current_time - self.window_size / 2
+                self.plot_signal(current_pos)
+
+    def stop_playback(self):
+        """Stop signal playback safely."""
+        if hasattr(self, 'worker'):
+            self.worker.is_playing = False
+        if hasattr(self, 'playback_thread'):
+            self.playback_thread.quit()
+            self.playback_thread.wait()
+
+        self.is_playing = False
+        self.ui.toggle_play_pause_signal_button.setText("Play")
+        self.current_index = 0
 
     def play_signal(self):
-        while self.current_index < len(self.qrs_peaks) and self.is_playing:
-            peak = self.qrs_peaks[self.current_index]
-            # Draw the signal up to the current peak
-            self.ui.ecg_plot_widget.clear()
-            self.ui.ecg_plot_widget.plot(self.smoothed_signal, pen=mkPen('g', width=1), name='Smoothed Signal')
-            self.ui.ecg_plot_widget.plot(self.smoothed_signal[:peak], pen=mkPen('g', width=2), name='Current Signal')
+        """Playback thread function."""
+        self.current_index = 0
+        step_size = int(self.sampling_rate * 0.05)  # 50ms step
 
-            # Highlight the current QRS peak
-            self.ui.ecg_plot_widget.plot([peak, peak], [min(self.smoothed_signal), max(self.smoothed_signal)], pen=mkPen('k', width=10))
+        while self.is_playing and self.current_index < len(self.filtered_signal):
+            start_time = time.time()
 
-            self.current_index += 6
-            time.sleep(1)  # Delay for demonstration (adjust as necessary)
+            self.current_index = min(self.current_index + step_size, len(self.filtered_signal))
+            self.plot_signal(self.current_index)
 
-        if not self.is_playing:
-            self.current_index = 0  # Reset index when stopped
+            # Maintain real-time playback speed
+            elapsed = time.time() - start_time
+            time.sleep(max(0.05 - elapsed, 0))
+
+        self.stop_playback()
 
     def clear_signal(self):
-        try:
-            self.ui.ecg_plot_widget.clear()
-            print("Signal cleared successfully.")
-        except Exception as e:
-            print(f"Failed to clear the signal: {e}")
+        """Reset the display and clear loaded data."""
+        self.stop_playback()
+        self.ui.ecg_plot_widget.clear()
+        self.x_data = None
+        self.y_data = None
+        self.filtered_signal = None
+        self.qrs_peaks = None
+        self.current_window_start = 0  # Reset window position
 
     def run(self):
+        """Start the application."""
         self.MainWindow.showFullScreen()
         self.app.exec_()
 
-    def closeApp(self):
-        remove_directories()
+    def close_app(self):
+        """Clean up and exit."""
+        self.stop_playback()
         self.app.quit()
