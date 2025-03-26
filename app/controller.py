@@ -5,10 +5,10 @@ from app.services.upload_signal import SignalFileUploader
 from app.services.playback_worker import PlaybackWorker
 from pyqtgraph import mkPen
 import numpy as np
-import pandas as pd
 from scipy.signal import find_peaks, butter, filtfilt
 import time
 from PyQt5.QtCore import QThread
+from PyQt5.QtMultimedia import QSound
 
 
 class MainWindowController:
@@ -44,15 +44,22 @@ class MainWindowController:
 
         self.setup_connections()
 
+        self.alert_sound = QSound("static/alarm/mixkit-warning-alarm-buzzer-991.wav")
+        self.is_alarm = False
+
+
     def setup_connections(self):
         """Connect UI signals to slots."""
         self.ui.upload_button.clicked.connect(self.upload_signal)
         self.ui.clear_signal_button.clicked.connect(self.clear_signal)
         self.ui.toggle_play_pause_signal_button.clicked.connect(self.toggle_play_pause_signal)
         self.ui.quit_app_button.clicked.connect(self.close_app)
+        self.ui.toggle_alarm_button.clicked.connect(self.toggle_alarm)
 
     def upload_signal(self):
         """Handle file upload and processing."""
+        if self.x_data is not None and self.y_data is not None:
+          self.clear_signal()
         filepath = self.service.upload_signal_file()
         if not filepath:
             return
@@ -239,10 +246,16 @@ class MainWindowController:
             # Color coding "font": font_large,
             if self.current_heart_rate > 100:
                 style = "color: red; font-size: 100px; font-weight: bold;"
+                self.alert_sound.play()  # Play alert sound for high heart rate
+                self.is_alarm=True
             elif self.current_heart_rate < 60:
-                style = "color: blue; font-size: 100px; font-weight: bold;"
+                style = "color: red; font-size: 100px; font-weight: bold;"
+                self.alert_sound.play()  # Play alert sound for high heart rate
+                self.is_alarm=True
             else:
                 style = "color: green; font-size: 100px; font-weight: bold;"
+                self.alert_sound.stop()
+                self.is_alarm=False
 
             self.ui.heart_rate_widget.setStyleSheet(style)
 
@@ -287,7 +300,20 @@ class MainWindowController:
         self.current_heart_rate = 0
         self.heart_rate_history = []
         self.last_peak_time = 0
-        self.update_heart_rate_display()
+        self.ui.heart_rate_widget.setText("--")
+        self.alert_sound.stop()
+        self.ui.toggle_alarm_button.setText("Alarm\nOFF")
+        self.is_alarm=False
+
+    def toggle_alarm(self):
+        if self.x_data is not None and self.y_data is not None:
+            if not self.is_alarm:
+                self.update_heart_rate_display()
+                self.ui.toggle_alarm_button.setText("Alarm\nOFF")
+            else:
+                self.alert_sound.stop()
+                self.ui.toggle_alarm_button.setText("Alarm\nON")
+                self.is_alarm=False
 
     def run(self):
         """Start the application."""
