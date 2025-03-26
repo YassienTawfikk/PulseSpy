@@ -106,7 +106,7 @@ class MainWindowController:
             # Highlight the current QRS peak
             self.ui.ecg_plot_widget.plot([peak, peak], [min(self.smoothed_signal), max(self.smoothed_signal)], pen=mkPen('k', width=10))
 
-            self.current_index += 10
+            self.current_index += 6
             time.sleep(1)  # Delay for demonstration (adjust as necessary)
 
         if not self.is_playing:
