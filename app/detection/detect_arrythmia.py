@@ -6,10 +6,6 @@ from tabulate import tabulate
 
 
 def arrhythmia_detection(time, voltage):
-    """
-    Input: time (array), voltage (array)
-    Returns: List of detected arrhythmias with timestamps.
-    """
     # 1. Detect R-peaks (heartbeats)
     peaks, _ = find_peaks(voltage, height=np.mean(voltage) + 2 * np.std(voltage), distance=100)
 
@@ -51,10 +47,6 @@ def arrhythmia_detection(time, voltage):
 
 
 def print_arrhythmia_results(results):
-    """
-    Prints detected arrhythmias in a structured format with severity colors.
-    Input: List of arrhythmia dictionaries from rule_based_arrhythmia_detection()
-    """
     if not results:
         print("\033[92m✓ No arrhythmias detected - Normal rhythm\033[0m")
         return
