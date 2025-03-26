@@ -45,7 +45,8 @@ class MainWindowController:
         self.setup_connections()
 
         self.alert_sound = QSound("static/alarm/mixkit-warning-alarm-buzzer-991.wav")
-        self.is_alarm = False
+        #self.is_alarm = False
+        self.alarm_pause=False
 
 
     def setup_connections(self):
@@ -55,6 +56,7 @@ class MainWindowController:
         self.ui.toggle_play_pause_signal_button.clicked.connect(self.toggle_play_pause_signal)
         self.ui.quit_app_button.clicked.connect(self.close_app)
         self.ui.toggle_alarm_button.clicked.connect(self.toggle_alarm)
+        self.ui.pause_alarm_button.clicked.connect(self.pause_alarm)
 
     def upload_signal(self):
         """Handle file upload and processing."""
@@ -159,6 +161,7 @@ class MainWindowController:
                 pen=mkPen('#55b135', width=2),
                 name='Playback'
             )
+            #self.ui.ecg_plot_widget.plot([current_pos, current_pos], [min(self.filtered_signal), max(self.filtered_signal)],pen=mkPen('k', width=10))
 
         # Plot peaks within window - with additional validation
         if self.qrs_peaks is not None:
@@ -246,16 +249,19 @@ class MainWindowController:
             # Color coding "font": font_large,
             if self.current_heart_rate > 100:
                 style = "color: red; font-size: 100px; font-weight: bold;"
-                self.alert_sound.play()  # Play alert sound for high heart rate
-                self.is_alarm=True
+                if self.ui.toggle_alarm_button.text()=="Alarm\nOFF" and self.alarm_pause == False:
+                    self.alert_sound.play()  # Play alert sound for high heart rate
+                    #self.is_alarm=True
             elif self.current_heart_rate < 60:
                 style = "color: red; font-size: 100px; font-weight: bold;"
-                self.alert_sound.play()  # Play alert sound for high heart rate
-                self.is_alarm=True
+                if self.ui.toggle_alarm_button.text()=="Alarm\nOFF" and self.alarm_pause == False:
+                    self.alert_sound.play()  # Play alert sound for high heart rate
+                    #self.is_alarm = True
             else:
                 style = "color: green; font-size: 100px; font-weight: bold;"
                 self.alert_sound.stop()
-                self.is_alarm=False
+                #self.is_alarm=False
+                self.alarm_pause =False
 
             self.ui.heart_rate_widget.setStyleSheet(style)
 
@@ -303,17 +309,17 @@ class MainWindowController:
         self.ui.heart_rate_widget.setText("--")
         self.alert_sound.stop()
         self.ui.toggle_alarm_button.setText("Alarm\nOFF")
-        self.is_alarm=False
+        #self.is_alarm=False
+
+    def pause_alarm(self):
+        self.alert_sound.stop()
+        self.alarm_pause =True
 
     def toggle_alarm(self):
-        if self.x_data is not None and self.y_data is not None:
-            if not self.is_alarm:
-                self.update_heart_rate_display()
-                self.ui.toggle_alarm_button.setText("Alarm\nOFF")
-            else:
-                self.alert_sound.stop()
-                self.ui.toggle_alarm_button.setText("Alarm\nON")
-                self.is_alarm=False
+        if self.ui.toggle_alarm_button.text() == "Alarm\nOFF":
+            self.ui.toggle_alarm_button.setText("Alarm\nON")
+        else:
+            self.ui.toggle_alarm_button.setText("Alarm\nOFF")
 
     def run(self):
         """Start the application."""
