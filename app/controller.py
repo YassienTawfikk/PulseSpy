@@ -69,7 +69,7 @@ class MainWindowController:
         try:
             self.ui.ecg_plot_widget.clear()
             # Plot smoothed signal
-            self.ui.ecg_plot_widget.plot(smoothed_signal, pen=mkPen('b', width=1), name='Smoothed Signal')
+            self.ui.ecg_plot_widget.plot(smoothed_signal, pen=mkPen('g', width=1), name='Smoothed Signal')
 
 
         except Exception as e:
@@ -100,8 +100,8 @@ class MainWindowController:
             peak = self.qrs_peaks[self.current_index]
             # Draw the signal up to the current peak
             self.ui.ecg_plot_widget.clear()
-            self.ui.ecg_plot_widget.plot(self.smoothed_signal, pen=mkPen('b', width=1), name='Smoothed Signal')
-            self.ui.ecg_plot_widget.plot(self.smoothed_signal[:peak], pen=mkPen('b', width=2), name='Current Signal')
+            self.ui.ecg_plot_widget.plot(self.smoothed_signal, pen=mkPen('g', width=1), name='Smoothed Signal')
+            self.ui.ecg_plot_widget.plot(self.smoothed_signal[:peak], pen=mkPen('g', width=2), name='Current Signal')
 
             # Highlight the current QRS peak
             self.ui.ecg_plot_widget.plot([peak, peak], [min(self.smoothed_signal), max(self.smoothed_signal)], pen=mkPen('k', width=10))
