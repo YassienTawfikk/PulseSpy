@@ -93,6 +93,7 @@ def print_arrhythmia_results(results):
         floatfmt=".2f"
     ))
 
+
     # Print color-coded details
     print("\n\033[1mDETAILS:\033[0m")
     for _, row in df.iterrows():
