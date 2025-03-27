@@ -223,6 +223,7 @@ class MainWindowController:
             return
         self.is_playing = True
         self.ui.toggle_play_pause_signal_button.setText("Pause")
+        self.alarm_pause = False
 
         self.playback_thread = QThread()
         self.worker = PlaybackWorker(self)
@@ -284,6 +285,7 @@ class MainWindowController:
                 np.abs(self.valid_intervals - mean_rr) > irregularity_threshold]
             if len(irregular_intervals) > 0:
                 self.ui.diagnosis_label.setText("Atrial Fibrillation")
+
 
             elif self.current_heart_rate > 100:
                 style = "color: red; font-size: 100px; font-weight: bold;"
@@ -354,6 +356,7 @@ class MainWindowController:
         self.alert_sound.stop()
         self.ui.toggle_alarm_button.setText("Alarm\nOFF")
         #self.is_alarm=False
+        self.ui.diagnosis_label.setText("#######")
 
     def pause_alarm(self):
         self.alert_sound.stop()
