@@ -1,28 +1,449 @@
-import wfdb
-import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.signal import find_peaks
+from tabulate import tabulate
 
-# Define the record name (e.g., "800") - Change based on the downloaded files
-record_name = "D:\PyCharmProjects\PulseSpy\mit-bih-supraventricular-arrhythmia-database-1.0.0\800"  # Full path without extension
+class Detect_arrythmia:
 
-# Load the record (ECG signal)
-record = wfdb.rdrecord(record_name)
+    def detect_atrial_fibrillation(self, ecg_signal,fs):
+        """Detect Atrial Fibrillation based on ECG features."""
+        af_detected = False
+        heart_rates, qrs_peaks =self.calculate_heart_rate(ecg_signal,fs)
+        # Check for irregularly irregular rhythm
+        if qrs_peaks is not None and len(qrs_peaks) > 1:
+            rr_intervals = np.diff(ecg_signal[qrs_peaks])
+            rr_variability = np.std(rr_intervals)
+            if rr_variability > 0.1:  # Example threshold for irregularity
+                af_detected = True
 
-# Load the annotation file (arrhythmia labels)
-annotation = wfdb.rdann(record_name, "atr")
+        # Check for absence of P waves
+        p_wave_threshold = 0.5  # Example threshold for P wave amplitude
+        if np.all(ecg_signal < p_wave_threshold):
+            af_detected = True
 
-# Extract signal and sampling frequency
-signal = record.p_signal[:, 0]  # Select first ECG lead
-fs = record.fs  # Sampling frequency
-time = np.arange(len(signal)) / fs  # Time axis
+        # Check for variable ventricular rate
+        if np.any(heart_rates > 100):  # Example threshold for fast ventricular rate
+            af_detected = True
 
-# Plot ECG signal
-plt.figure(figsize=(12, 4))
-plt.plot(time, signal, label="ECG Signal", color='b')
-plt.scatter(annotation.sample / fs, np.zeros_like(annotation.sample), color='red', label="Arrhythmia Markers", marker='x')
-plt.xlabel("Time (s)")
-plt.ylabel("Amplitude (mV)")
-plt.title(f"MIT-BIH Supraventricular Arrhythmia Database - Record {record_name}")
-plt.legend()
-plt.grid()
-plt.show()
+        return af_detected
+
+    def detect_atrial_flutter(self, ecg_signal, fs):
+        """Detect Atrial Flutter based on ECG features."""
+        afl_detected = False
+        heart_rates, qrs_peaks = self.calculate_heart_rate(ecg_signal, fs)
+
+        # Check for narrow complex tachycardia and regular atrial activity
+        if qrs_peaks is not None and len(qrs_peaks) > 1:
+            rr_intervals = np.diff(qrs_peaks) / fs  # Convert indices to seconds
+            avg_rr = np.mean(rr_intervals)
+
+            # Check if heart rate is around 300 bpm
+            if avg_rr < (60 / 300):  # Average RR interval for ~300 bpm
+                afl_detected = True
+
+            # Check for regularity of RR intervals
+            if np.std(rr_intervals) < 0.1 * avg_rr:  # Regular intervals
+                afl_detected = True
+
+        return afl_detected
+
+    def detect_supraventricular_tachycardia(self, ecg_signal, fs):
+        """Detect Supraventricular Tachycardia based on ECG features."""
+        svt_detected = False
+        heart_rates, qrs_peaks = self.calculate_heart_rate(ecg_signal, fs)
+
+        # Check for narrow complex tachycardia
+        if qrs_peaks is not None and len(qrs_peaks) > 1:
+            rr_intervals = np.diff(qrs_peaks) / fs  # Convert indices to seconds
+            avg_rr = np.mean(rr_intervals)
+            mean_hr = 60 / avg_rr  # Average heart rate (bpm)
+
+            # Check if heart rate is between 180 and 220 bpm
+            if 180 <= mean_hr <= 220:
+                svt_detected = True
+
+        # Check for absence of P waves
+        p_wave_threshold = 0.5  # Example threshold for P wave amplitude
+        if np.any(ecg_signal > p_wave_threshold):
+            # If P waves are detectable, SVT is not likely
+            svt_detected = False
+
+        return svt_detected
+
+    def calculate_heart_rate(self,ecg_signal, sampling_rate):
+        """Calculate heart rate from the ECG signal."""
+        r_peaks = []
+        threshold = np.mean(ecg_signal) + np.std(ecg_signal)  # Example threshold for R-peaks
+        for i in range(1, len(ecg_signal) - 1):
+            if ecg_signal[i] > threshold and ecg_signal[i - 1] <= threshold:
+                r_peaks.append(i)
+
+        rr_intervals = np.diff(r_peaks) / sampling_rate  # Convert to seconds
+        heart_rates = 60 / rr_intervals  # Convert RR intervals to heart rate (bpm)
+
+        return heart_rates, r_peaks
+from PyQt5 import QtWidgets
+from app.utils.clean_cache import remove_directories
+from app.design.design import Ui_MainWindow
+from app.services.upload_signal import SignalFileUploader
+from app.services.playback_worker import PlaybackWorker
+from pyqtgraph import mkPen
+import numpy as np
+from scipy.signal import find_peaks, butter, filtfilt
+import time
+from PyQt5.QtCore import QThread
+from PyQt5.QtMultimedia import QSound
+from app.detection.detect_arrythmia import Detect_arrythmia
+
+
+
+class MainWindowController:
+    def __init__(self):
+        self.app = QtWidgets.QApplication([])
+        self.MainWindow = QtWidgets.QMainWindow()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self.MainWindow)
+        self.service = SignalFileUploader()
+
+        # Window settings
+        self.window_size = 5.0  # seconds of signal to display
+        self.current_window_start = 0  # starting time of current window
+
+        # Signal data
+        self.x_data = None
+        self.y_data = None
+        self.filtered_signal = None
+        self.qrs_peaks = None
+
+        # Playback control
+        self.is_playing = False
+        self.playback_thread = None
+        self.current_index = 0
+        self.sampling_rate = 250  # Default sampling rate in Hz
+
+        # Heart rate calculation
+        self.current_heart_rate = 0
+        self.heart_rate_history = []
+        self.last_peak_time = 0
+
+        self.ui.heart_rate_widget.setText("--")
+
+        self.setup_connections()
+
+        self.alert_sound = QSound("static/alarm/mixkit-warning-alarm-buzzer-991.wav")
+        #self.is_alarm = False
+        self.alarm_pause=False
+
+        self.detect_arrhythmia=Detect_arrythmia()
+
+
+
+    def setup_connections(self):
+        """Connect UI signals to slots."""
+        self.ui.upload_button.clicked.connect(self.upload_signal)
+        self.ui.clear_signal_button.clicked.connect(self.clear_signal)
+        self.ui.toggle_play_pause_signal_button.clicked.connect(self.toggle_play_pause_signal)
+        self.ui.quit_app_button.clicked.connect(self.close_app)
+        self.ui.toggle_alarm_button.clicked.connect(self.toggle_alarm)
+        self.ui.pause_alarm_button.clicked.connect(self.pause_alarm)
+
+    def upload_signal(self):
+        """Handle file upload and processing."""
+        if self.x_data is not None and self.y_data is not None:
+          self.clear_signal()
+        filepath = self.service.upload_signal_file()
+        if not filepath:
+            return
+
+        x_data, y_data, _ = self.service.load_signal_data(filepath)
+        if x_data is not None and y_data is not None:
+            self.x_data = x_data
+            self.y_data = y_data
+            self.process_ecg_signal(y_data)
+            self.arrhythmia()
+
+    def process_ecg_signal(self, ecg_signal):
+        """Process and plot ECG signal."""
+        try:
+            # Estimate sampling rate if not available
+            if len(self.x_data) > 1:
+                self.sampling_rate = 1 / (self.x_data[1] - self.x_data[0])
+
+            # Filter and find peaks
+            self.filtered_signal = self.butter_lowpass_filter(
+                ecg_signal,
+                cutoff=15,  # Appropriate for QRS detection
+                fs=self.sampling_rate
+            )
+
+            # Find peaks with ECG-specific parameters
+            self.qrs_peaks, _ = find_peaks(
+                self.filtered_signal,
+                height=np.mean(self.filtered_signal) + 2 * np.std(self.filtered_signal),
+                distance=self.sampling_rate * 0.2  # Minimum 200ms between peaks
+            )
+            # Calculate initial heart rate
+            self.calculate_heart_rate()
+
+            # Plot initial signal
+            self.plot_signal()
+        except Exception as e:
+            print(f"Processing error: {e}")
+
+    def calculate_heart_rate(self):
+        """Calculate heart rate from detected peaks."""
+        if self.qrs_peaks is None or len(self.qrs_peaks) < 2:
+            self.current_heart_rate = 0
+            return
+
+        # Calculate RR intervals (time between peaks in seconds)
+        rr_intervals = np.diff(self.x_data[self.qrs_peaks])
+
+        # Filter out unrealistic intervals (e.g., <0.3s or >1.5s)
+        valid_intervals = rr_intervals[(rr_intervals > 0.3) & (rr_intervals < 1.5)]
+
+        if len(valid_intervals) > 0:
+            # Calculate average heart rate in BPM
+            avg_rr = np.mean(valid_intervals)
+            self.current_heart_rate = 60 / avg_rr
+        else:
+            self.current_heart_rate = 0
+
+        # Store for history
+        self.heart_rate_history.append(self.current_heart_rate)
+
+    def butter_lowpass_filter(self, data, cutoff, fs, order=4):
+        """Apply Butterworth lowpass filter."""
+        nyq = 0.5 * fs
+        normal_cutoff = cutoff / nyq
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        return filtfilt(b, a, data)
+
+    def plot_signal(self, current_pos=None):
+        """Plot ECG signal within the fixed window."""
+        self.ui.ecg_plot_widget.clear()
+
+        if self.filtered_signal is None or self.x_data is None:
+            return
+
+        # Calculate window bounds
+        window_start = self.current_window_start
+        window_end = window_start + self.window_size
+
+        # Get indices for the current window
+        mask = (self.x_data >= window_start) & (self.x_data <= window_end)
+        x_window = self.x_data[mask]
+        y_window = self.filtered_signal[mask]
+
+        # Plot the windowed signal
+        self.ui.ecg_plot_widget.plot(
+            x_window,
+            y_window,
+            pen=mkPen('#033500', width=3),
+        )
+
+        # Highlight playback position if provided
+        if current_pos is not None and current_pos > 0 and current_pos < len(self.x_data):
+            mask_played = (self.x_data[:current_pos] >= window_start) & (self.x_data[:current_pos] <= window_end)
+            self.ui.ecg_plot_widget.plot(
+                self.x_data[:current_pos][mask_played],
+                self.filtered_signal[:current_pos][mask_played],
+                pen=mkPen('#55b135', width=2),
+                name='Playback'
+            )
+            #self.ui.ecg_plot_widget.plot([current_pos, current_pos], [min(self.filtered_signal), max(self.filtered_signal)],pen=mkPen('k', width=10))
+
+        # Plot peaks within window - with additional validation
+        if self.qrs_peaks is not None:
+            valid_peaks = []
+            for p in self.qrs_peaks:
+                if (p < len(self.x_data) and
+                        window_start <= self.x_data[p] <= window_end):
+                    valid_peaks.append(p)
+
+            if valid_peaks:
+                self.ui.ecg_plot_widget.plot(
+                    self.x_data[valid_peaks],
+                    self.filtered_signal[valid_peaks],
+                    pen=None,
+                    symbol='x',
+                    symbolSize=8,
+                    symbolBrush='r',
+                )
+
+        # Set fixed X range and auto Y range
+        self.ui.ecg_plot_widget.setXRange(window_start, window_end)
+        self.ui.ecg_plot_widget.enableAutoRange(axis='y')
+
+    def toggle_play_pause_signal(self):
+        """Toggle signal playback."""
+        if not self.is_playing:
+            self.start_playback()
+        else:
+            self.stop_playback()
+
+    def start_playback(self):
+        """Start signal playback using QThread."""
+        if self.filtered_signal is None:
+            return
+        self.is_playing = True
+        self.ui.toggle_play_pause_signal_button.setText("Pause")
+
+        self.playback_thread = QThread()
+        self.worker = PlaybackWorker(self)
+        self.worker.moveToThread(self.playback_thread)
+        self.worker.update_signal.connect(self.update_playback_position)
+
+        self.playback_thread.started.connect(self.worker.run)
+        self.playback_thread.start()
+
+    def update_playback_position(self, current_pos):
+        """Slot to update playback position (runs in main thread)."""
+        self.current_index = current_pos
+
+        # Calculate window bounds based on current position
+        self.current_window_start = max(0, self.x_data[current_pos] - self.window_size)
+
+        # Plot the signal for the current window
+        self.plot_signal(current_pos)
+
+        # Check if we've passed any new peaks
+        if self.qrs_peaks is not None and len(self.qrs_peaks) > 0:
+            # Find all peaks that have been passed (index <= current_pos)
+            passed_peaks = [p for p in self.qrs_peaks if p <= current_pos]
+
+            # If we have passed at least 2 peaks, calculate heart rate
+            if len(passed_peaks) >= 2:
+                # Get the last two passed peaks
+                last_two_peaks = passed_peaks[-2:]
+                rr_interval = self.x_data[last_two_peaks[1]] - self.x_data[last_two_peaks[0]]
+
+                # Calculate instant heart rate (not average)
+                if 0.3 < rr_interval < 1.5:  # Valid RR interval range
+                    self.current_heart_rate = 60 / rr_interval
+                    self.update_heart_rate_display()
+
+        # Auto-scroll window
+        if self.current_index < len(self.x_data):
+            current_time = self.x_data[self.current_index]
+            if current_time > self.current_window_start + self.window_size:
+                self.current_window_start = current_time - self.window_size
+
+    def update_heart_rate_display(self):
+        """Update the heart rate widget with current value."""
+        if hasattr(self.ui, 'heart_rate_widget'):
+            # Convert to integer and format as string
+            hr_text = str(int(round(self.current_heart_rate)))
+            self.ui.heart_rate_widget.setText(hr_text)
+
+            # Force immediate update
+            self.ui.heart_rate_widget.repaint()
+
+            # Color coding "font": font_large,
+            if self.current_heart_rate > 100:
+                style = "color: red; font-size: 100px; font-weight: bold;"
+                if self.ui.toggle_alarm_button.text()=="Alarm\nOFF" and self.alarm_pause == False:
+                    self.alert_sound.play()  # Play alert sound for high heart rate
+                    #self.is_alarm=True
+            elif self.current_heart_rate < 60:
+                style = "color: red; font-size: 100px; font-weight: bold;"
+                if self.ui.toggle_alarm_button.text()=="Alarm\nOFF" and self.alarm_pause == False:
+                    self.alert_sound.play()  # Play alert sound for high heart rate
+                    #self.is_alarm = True
+            else:
+                style = "color: green; font-size: 100px; font-weight: bold;"
+                self.alert_sound.stop()
+                #self.is_alarm=False
+                self.alarm_pause =False
+
+            self.ui.heart_rate_widget.setStyleSheet(style)
+            #self.arrhythmia()
+
+    def stop_playback(self):
+        """Stop signal playback safely."""
+        if hasattr(self, 'worker'):
+            self.worker.is_playing = False
+        if hasattr(self, 'playback_thread'):
+            self.playback_thread.quit()
+            self.playback_thread.wait()
+
+        self.is_playing = False
+        self.ui.toggle_play_pause_signal_button.setText("Play")
+        self.current_index = 0
+        self.alert_sound.stop()
+
+    def play_signal(self):
+        """Playback thread function."""
+        self.current_index = 0
+        step_size = int(self.sampling_rate * 0.05)  # 50ms step
+
+        while self.is_playing and self.current_index < len(self.filtered_signal):
+            start_time = time.time()
+
+            self.current_index = min(self.current_index + step_size, len(self.filtered_signal))
+            self.plot_signal(self.current_index)
+
+            # Maintain real-time playback speed
+            elapsed = time.time() - start_time
+            time.sleep(max(0.05 - elapsed, 0))
+
+        self.stop_playback()
+
+    def clear_signal(self):
+        """Reset the display and clear loaded data."""
+        self.stop_playback()
+        self.ui.ecg_plot_widget.clear()
+        self.x_data = None
+        self.y_data = None
+        self.filtered_signal = None
+        self.qrs_peaks = None
+        self.current_window_start = 0
+        self.current_heart_rate = 0
+        self.heart_rate_history = []
+        self.last_peak_time = 0
+        self.ui.heart_rate_widget.setText("--")
+        self.alert_sound.stop()
+        self.ui.toggle_alarm_button.setText("Alarm\nOFF")
+        #self.is_alarm=False
+
+    def pause_alarm(self):
+        self.alert_sound.stop()
+        self.alarm_pause =True
+
+    def arrhythmia(self):
+        """Detect arrhythmias including Atrial Fibrillation."""
+        if self.x_data is None or self.filtered_signal is None:
+            self.ui.diagnosis_label.setText("No data to analyze.")
+            return
+
+        af_detected = self.detect_arrhythmia.detect_atrial_fibrillation(self.filtered_signal,self.sampling_rate)
+        afl_detected=self.detect_arrhythmia.detect_atrial_flutter(self.filtered_signal,self.sampling_rate)
+        svt_detected=self.detect_arrhythmia.detect_supraventricular_tachycardia(self.filtered_signal,self.sampling_rate)
+        if af_detected:
+            self.ui.diagnosis_label.setText("Atrial Fibrillation detected.")
+        elif afl_detected:
+            self.ui.diagnosis_label.setText("Atrial Flutter detected.")
+        elif svt_detected:
+            self.ui.diagnosis_label.setText("Supraventricular tachycardia detected.")
+        else:
+            self.ui.diagnosis_label.setText("No Atrial Fibrillation detected.")
+
+
+    def toggle_alarm(self):
+        if self.ui.toggle_alarm_button.text() == "Alarm\nOFF":
+            self.ui.toggle_alarm_button.setText("Alarm\nON")
+            self.alert_sound.stop()
+        else:
+            self.ui.toggle_alarm_button.setText("Alarm\nOFF")
+
+    def run(self):
+        """Start the application."""
+        self.MainWindow.showFullScreen()
+        self.app.exec_()
+
+    def close_app(self):
+        """Clean up and exit."""
+        # self.stop_playback()
+        self.app.quit()
+        remove_directories()

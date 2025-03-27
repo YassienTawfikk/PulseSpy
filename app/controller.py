@@ -11,6 +11,7 @@ from PyQt5.QtCore import QThread
 from PyQt5.QtMultimedia import QSound
 
 
+
 class MainWindowController:
     def __init__(self):
         self.app = QtWidgets.QApplication([])
@@ -48,6 +49,10 @@ class MainWindowController:
         #self.is_alarm = False
         self.alarm_pause=False
 
+        self.valid_intervals= None
+
+
+
 
     def setup_connections(self):
         """Connect UI signals to slots."""
@@ -79,19 +84,23 @@ class MainWindowController:
             if len(self.x_data) > 1:
                 self.sampling_rate = 1 / (self.x_data[1] - self.x_data[0])
 
-            # Filter and find peaks
+            # Filter and find QRS peaks
             self.filtered_signal = self.butter_lowpass_filter(
                 ecg_signal,
                 cutoff=15,  # Appropriate for QRS detection
                 fs=self.sampling_rate
             )
 
-            # Find peaks with ECG-specific parameters
+            # Find QRS peaks
             self.qrs_peaks, _ = find_peaks(
                 self.filtered_signal,
                 height=np.mean(self.filtered_signal) + 2 * np.std(self.filtered_signal),
                 distance=self.sampling_rate * 0.2  # Minimum 200ms between peaks
             )
+
+            # Find P-wave peaks
+            self.p_wave_peaks = self.detect_p_waves(ecg_signal)
+
             # Calculate initial heart rate
             self.calculate_heart_rate()
 
@@ -99,6 +108,29 @@ class MainWindowController:
             self.plot_signal()
         except Exception as e:
             print(f"Processing error: {e}")
+
+    def detect_p_waves(self, ecg_signal):
+        """Detect P-waves in the ECG signal."""
+        # Bandpass filter for P-wave detection (0.5-4 Hz)
+        lowcut = 0.5
+        highcut = 4.0
+        p_wave_filtered = self.butter_bandpass_filter(ecg_signal, lowcut, highcut, self.sampling_rate)
+
+        # Find P-wave peaks
+        p_wave_peaks, _ = find_peaks(
+            p_wave_filtered,
+            height=np.mean(p_wave_filtered) + 0.5 * np.std(p_wave_filtered),
+            distance=self.sampling_rate * 0.6  # Minimum 600ms between peaks
+        )
+        return p_wave_peaks
+
+    def butter_bandpass_filter(self, data, lowcut, highcut, fs, order=4):
+        """Apply Butterworth bandpass filter."""
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
+        b, a = butter(order, [low, high], btype='band')
+        return filtfilt(b, a, data)
 
     def calculate_heart_rate(self):
         """Calculate heart rate from detected peaks."""
@@ -110,11 +142,12 @@ class MainWindowController:
         rr_intervals = np.diff(self.x_data[self.qrs_peaks])
 
         # Filter out unrealistic intervals (e.g., <0.3s or >1.5s)
-        valid_intervals = rr_intervals[(rr_intervals > 0.3) & (rr_intervals < 1.5)]
+        self.valid_intervals = rr_intervals[(rr_intervals > 0.3) & (rr_intervals < 1.5)]
 
-        if len(valid_intervals) > 0:
+        if len(self.valid_intervals) > 0:
             # Calculate average heart rate in BPM
-            avg_rr = np.mean(valid_intervals)
+            avg_rr = np.mean(self.valid_intervals)
+            print(avg_rr)
             self.current_heart_rate = 60 / avg_rr
         else:
             self.current_heart_rate = 0
@@ -171,15 +204,7 @@ class MainWindowController:
                         window_start <= self.x_data[p] <= window_end):
                     valid_peaks.append(p)
 
-            if valid_peaks:
-                self.ui.ecg_plot_widget.plot(
-                    self.x_data[valid_peaks],
-                    self.filtered_signal[valid_peaks],
-                    pen=None,
-                    symbol='x',
-                    symbolSize=8,
-                    symbolBrush='r',
-                )
+
 
         # Set fixed X range and auto Y range
         self.ui.ecg_plot_widget.setXRange(window_start, window_end)
@@ -196,7 +221,6 @@ class MainWindowController:
         """Start signal playback using QThread."""
         if self.filtered_signal is None:
             return
-
         self.is_playing = True
         self.ui.toggle_play_pause_signal_button.setText("Pause")
 
@@ -249,23 +273,38 @@ class MainWindowController:
 
             # Force immediate update
             self.ui.heart_rate_widget.repaint()
+            self.ui.diagnosis_label.clear()
 
-            # Color coding "font": font_large,
-            if self.current_heart_rate > 100:
+            mean_rr = np.mean(self.valid_intervals)
+            std_rr = np.std(self.valid_intervals)
+            irregularity_threshold = std_rr *4
+
+            # Identify irregular intervals
+            irregular_intervals = self.valid_intervals[
+                np.abs(self.valid_intervals - mean_rr) > irregularity_threshold]
+            if len(irregular_intervals) > 0:
+                self.ui.diagnosis_label.setText("Atrial Fibrillation")
+
+            elif self.current_heart_rate > 100:
                 style = "color: red; font-size: 100px; font-weight: bold;"
                 if self.ui.toggle_alarm_button.text()=="Alarm\nOFF" and self.alarm_pause == False:
                     self.alert_sound.play()  # Play alert sound for high heart rate
                     #self.is_alarm=True
+                self.ui.diagnosis_label.setText("Tachycardia")
+
             elif self.current_heart_rate < 60:
                 style = "color: red; font-size: 100px; font-weight: bold;"
                 if self.ui.toggle_alarm_button.text()=="Alarm\nOFF" and self.alarm_pause == False:
                     self.alert_sound.play()  # Play alert sound for high heart rate
                     #self.is_alarm = True
+                self.ui.diagnosis_label.setText("Bradycardia")
+
             else:
                 style = "color: green; font-size: 100px; font-weight: bold;"
                 self.alert_sound.stop()
                 #self.is_alarm=False
                 self.alarm_pause =False
+                self.ui.diagnosis_label.setText("Normal")
 
             self.ui.heart_rate_widget.setStyleSheet(style)
 
@@ -280,6 +319,7 @@ class MainWindowController:
         self.is_playing = False
         self.ui.toggle_play_pause_signal_button.setText("Play")
         self.current_index = 0
+        self.alert_sound.stop()
 
     def play_signal(self):
         """Playback thread function."""
@@ -319,9 +359,12 @@ class MainWindowController:
         self.alert_sound.stop()
         self.alarm_pause =True
 
+
+
     def toggle_alarm(self):
         if self.ui.toggle_alarm_button.text() == "Alarm\nOFF":
             self.ui.toggle_alarm_button.setText("Alarm\nON")
+            self.alert_sound.stop()
         else:
             self.ui.toggle_alarm_button.setText("Alarm\nOFF")
 
