@@ -1,26 +1,28 @@
-# Pulse Spy – Patient Monitor GUI  
+# Pulse Spy – Patient Monitor GUI
 
-## 🚀 Overview  
+## Overview
+
 **Pulse Spy** is a biomedical desktop application that simulates a real-time patient monitoring system. It displays ECG signals, calculates heart rate, and automatically detects and classifies arrhythmias. The interface is designed for medical accuracy, real-time interaction, and clean visualization.
 
 ![Overview](https://github.com/user-attachments/assets/e843b8d5-dc87-43bc-9672-68e6d9f01aa6)
 
+## Features
 
-## 🎯 Features  
 ✔️ Real-time ECG signal visualization  
 ✔️ Live heart rate monitoring  
 ✔️ Arrhythmia detection and classification  
 ✔️ Alarm system with ON/OFF and pause functions  
 ✔️ Upload and playback of ECG recordings  
 ✔️ Reset, clear, and exit controls for session handling  
-✔️ PyQt5-powered interface with clinical styling  
+✔️ PyQt5-powered interface with clinical styling
 
-## 📌 Installation  
+## Installation
+
 ```bash
 pip install -r requirements.txt
 ````
 
-## 🛠 Tech Stack
+## Tech Stack
 
 * **Programming Language:** Python
 * **GUI Framework:** PyQt5
@@ -29,7 +31,7 @@ pip install -r requirements.txt
 * **Sound Alerts:** QSound (PyQt5.QtMultimedia)
 * **ECG Data Handling:** pandas, wfdb
 
-## 📊 Usage
+## Usage
 
 1. Launch the app:
 
@@ -42,7 +44,24 @@ python main.py
 4. Use **Alarm Pause**, **Reset**, or **Clear** as needed.
 5. Close the app with the exit (X) button.
 
-## 🧠 Arrhythmia Detection Algorithm
+## Machine Learning Models
+
+Pulse Spy integrates a pre-trained deep learning model to enhance diagnostic capabilities:
+
+### arrhythmia_model.h5
+
+- **Type:** Convolutional Neural Network (CNN)
+- **Framework:** TensorFlow/Keras
+- **Input:** 1D segments of filtered ECG signals around detected R-peaks
+- **Purpose:** Classifies heartbeat segments into normal or arrhythmic classes
+- **Classes Detected:**
+    - **Normal**
+    - **Atrial Fibrillation (AFib)**
+    - *(Future expandable to include PVCs, PACs, etc.)*
+
+The model is loaded once at startup and performs **real-time inference** on segmented beats during playback. Its predictions are then used to update the diagnosis label on the GUI and may influence alarm behavior (e.g., suppressing alarms during AFib to avoid over-triggering).
+
+## Arrhythmia Detection Algorithm
 
 Pulse Spy uses a hybrid signal processing approach to detect cardiac events in real time:
 
@@ -52,28 +71,27 @@ Pulse Spy uses a hybrid signal processing approach to detect cardiac events in r
 * **Heart rate** is calculated based on valid RR intervals (0.3s to 1.5s).
 * **Rhythm classification** uses a combination of RR variability and BPM thresholds.
 
-### ✅ Detected Arrhythmias
+### Detected Arrhythmias
 
 1. **Tachycardia**
 
-   * Condition: Heart rate > 100 BPM
-   * Action: Alarm triggered and red-highlighted HR display
+    * Condition: Heart rate > 100 BPM
+    * Action: Alarm triggered and red-highlighted HR display
 
 2. **Bradycardia**
 
-   * Condition: Heart rate < 60 BPM
-   * Action: Alarm triggered and red-highlighted HR display
+    * Condition: Heart rate < 60 BPM
+    * Action: Alarm triggered and red-highlighted HR display
 
 3. **Atrial Fibrillation (AFib)**
 
-   * Condition: Irregular RR intervals with high standard deviation
-   * Action: Diagnosis labeled as "Atrial Fibrillation" with suppressed alarm to avoid false positives
+    * Condition: Irregular RR intervals with high standard deviation
+    * Action: Diagnosis labeled as "Atrial Fibrillation" with suppressed alarm to avoid false positives
 
 The system continuously evaluates incoming ECG segments during playback and adapts the display and alert system based on detected cardiac activity.
 
-## 🤝 Contributions
-
 ## Contributors
+
 <div>
 <table align="center">
   <tr>
