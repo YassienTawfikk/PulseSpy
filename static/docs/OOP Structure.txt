@@ -1,33 +1,58 @@
-app
+PulseSpy/
 │
-├── design
-│   ├── ui
-│   │   └── design.ui
-│   │
-│   └── design.py
+├── app/
+│   ├── controller.py
+│   ├── design/
+│   │   ├── ui/
+│   │   │   └── design.ui
+│   │   └── design.py
+│   ├── processing/
+│   │   ├── classifier.py
+│   │   ├── filtering.py
+│   │   ├── model_loader.py
+│   │   └── segmentation.py
+│   ├── services/
+│   │   ├── playback_worker.py
+│   │   └── upload_signal.py
+│   └── utils/
+│       ├── clean_cache.py
+│       └── save_dummy_model.py
 │
-├── services
-│   └── upload_signal.py
+├── models/
+│   └── arrhythmia_model.h5
 │
-├── utils
-│   └── clean_cache.py
+├── static/
+│   ├── alarm/
+│   │   └── mixkit-warning-alarm-buzzer-991.wav
+│   ├── datasets/
+│   │   ├── mit-bih-supraventricular-arrhythmia-database-1.0.0/
+│   │   │   ├── 231.atr
+│   │   │   ├── 231.dat
+│   │   │   ├── 231.hea
+│   │   │   ├── 231.xws
+│   │   │   ├── 800.atr
+│   │   │   ├── 800.dat
+│   │   │   ├── 800.hea
+│   │   │   ├── 800.hea-
+│   │   │   ├── 800.xws
+│   │   │   ├── 808.atr
+│   │   │   ├── 808.dat
+│   │   │   ├── 808.hea
+│   │   │   ├── 808.hea-
+│   │   │   └── 808.xws
+│   │   ├── ECG_Person_01_rec_1_raw.csv
+│   │   ├── ECG_Person_02_rec_10_raw.csv
+│   │   ├── ECG_Person_45_rec_2_raw.csv
+│   │   ├── ECG_Person_69_rec_2_raw.csv
+│   │   ├── ECG_Person_86_rec_1_raw.csv
+│   │   └── ECG_Person_90_rec_2_raw.csv
+│   ├── docs/
+│   │   └── OOP Structure.txt
+│   └── images/
+│       ├── icon.png
+│       └── Patient-Monitor-Software.jpg
 │
-└── controller.py
-
-static
-│
-├── datasets
-│   ├── ECG_Person_01_rec_1_raw.csv
-│   ├── ECG_Person_02_rec_10_raw.csv
-│   ├── ECG_Person_45_rec_2_raw.csv
-│   ├── ECG_Person_86_rec_1_raw.csv
-│   └── ECG_Person_90_rec_2_raw.csv
-│
-├── docs
-│   └── OOP Structure.txt
-│
-└── images
-    ├── Patient-Monitor-Software.jpg
-    └── icon.png
-
-main.py
+├── main.py
+├── README.md
+├── requirements.txt
+└── .gitignore  ← (create this!)
