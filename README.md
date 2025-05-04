@@ -2,7 +2,8 @@
 
 ## Overview
 
-**Pulse Spy** is a biomedical desktop application that simulates a real-time patient monitoring system. It displays ECG signals, calculates heart rate, and automatically detects and classifies arrhythmias. The interface is designed for medical accuracy, real-time interaction, and clean visualization.
+**Pulse Spy** is an advanced biomedical desktop application that emulates a real-time patient monitoring system using cutting-edge signal processing and deep learning techniques. It seamlessly visualizes ECG signals, calculates heart rate, and intelligently detects and classifies arrhythmias—all through a clinically inspired interface designed for precision, responsiveness, and clarity.
+
 
 ![Overview](https://github.com/user-attachments/assets/e843b8d5-dc87-43bc-9672-68e6d9f01aa6)
 
