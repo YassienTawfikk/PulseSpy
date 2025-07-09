@@ -48,7 +48,7 @@ class MainWindowController:
         self.setup_connections()
 
         # alarm settings
-        self.alert_sound = QSound("static/alarm/mixkit-warning-alarm-buzzer-991.wav")
+        self.alert_sound = QSound("static/alarm/ECG_Alarm.wav")
         self.alarm_enabled = True  # master ON / OFF
         self.alarm_pause = False  # user-pressed “pause” button
         self.alarm_cooldown_sec = 4  # minimum seconds between repeats
@@ -151,7 +151,8 @@ class MainWindowController:
 
         # Plot QRS peaks as red circles
         if self.qrs_peaks is not None:
-            valid_peaks = [p for p in self.qrs_peaks if p < len(self.x_data) and window_start <= self.x_data[p] <= window_end]
+            valid_peaks = [p for p in self.qrs_peaks if
+                           p < len(self.x_data) and window_start <= self.x_data[p] <= window_end]
             for p in valid_peaks:
                 self.ui.ecg_plot_widget.plot(
                     [self.x_data[p]],
