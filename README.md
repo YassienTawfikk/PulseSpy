@@ -7,6 +7,15 @@
 
 ![Overview](https://github.com/user-attachments/assets/e843b8d5-dc87-43bc-9672-68e6d9f01aa6)
 
+---
+
+## **Video Demo**
+
+
+https://github.com/user-attachments/assets/fcbfef27-85de-4a49-a44a-e866fd041a62
+
+
+
 ## Features
 
 ✔️ Real-time ECG signal visualization  
