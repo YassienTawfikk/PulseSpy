@@ -11,10 +11,7 @@
 
 ## **Video Demo**
 
-
-https://github.com/user-attachments/assets/fcbfef27-85de-4a49-a44a-e866fd041a62
-
-
+https://github.com/user-attachments/assets/eefadd90-89af-4b33-b589-6f108a437ca3
 
 ## Features
 
