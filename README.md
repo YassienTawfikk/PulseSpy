@@ -2,16 +2,15 @@
 
 ## Overview
 
-**Pulse Spy** is an advanced biomedical desktop application that emulates a real-time patient monitoring system using cutting-edge signal processing and deep learning techniques. It seamlessly visualizes ECG signals, calculates heart rate, and intelligently detects and classifies arrhythmias—all through a clinically inspired interface designed for precision, responsiveness, and clarity.
+**Pulse Spy** utilizes a custom Convolutional Neural Network (CNN) and advanced signal processing to power a real-time patient monitoring system. It seamlessly visualizes ECG signals, calculates heart rate, and intelligently detects and classifies arrhythmias—all through a clinically inspired interface designed for precision, responsiveness, and clarity.
 
-
-![Overview](https://github.com/user-attachments/assets/e843b8d5-dc87-43bc-9672-68e6d9f01aa6)
+![Overview](https://github.com/user-attachments/assets/d695ec6c-3e57-4216-9da4-39b0065bf553)
 
 ---
 
 ## **Video Demo**
 
-https://github.com/user-attachments/assets/eefadd90-89af-4b33-b589-6f108a437ca3
+<https://github.com/user-attachments/assets/eefadd90-89af-4b33-b589-6f108a437ca3>
 
 ## Features
 
@@ -46,10 +45,10 @@ pip install -r requirements.txt
 python main.py
 ```
 
-2. Click **Upload** to import an ECG file.
-3. Observe the live plot and heart rate counter.
-4. Use **Alarm Pause**, **Reset**, or **Clear** as needed.
-5. Close the app with the exit (X) button.
+1. Click **Upload** to import an ECG file.
+2. Observe the live plot and heart rate counter.
+3. Use **Alarm Pause**, **Reset**, or **Clear** as needed.
+4. Close the app with the exit (X) button.
 
 ## Machine Learning Models
 
@@ -57,14 +56,25 @@ Pulse Spy integrates a pre-trained deep learning model to enhance diagnostic cap
 
 ### arrhythmia_model.h5
 
-- **Type:** Convolutional Neural Network (CNN)
-- **Framework:** TensorFlow/Keras
-- **Input:** 1D segments of filtered ECG signals around detected R-peaks
-- **Purpose:** Classifies heartbeat segments into normal or arrhythmic classes
-- **Classes Detected:**
-    - **Normal**
-    - **Atrial Fibrillation (AFib)**
-    - *(Future expandable to include PVCs, PACs, etc.)*
+* **Type:** 1D Convolutional Neural Network (CNN)
+* **Framework:** TensorFlow/Keras
+* **Architecture:**
+  * **Input:** 250-sample ECG segment (1D)
+  * **Layers:**
+    * Conv1D (32 filters, kernel_size=5, activation='relu')
+    * MaxPooling1D (pool_size=2)
+    * Flatten
+    * Dense (16 units, activation='relu')
+    * Output Dense (3 units, activation='softmax')
+* **Performance:**
+  * **Accuracy:** ~98% (Validation)
+  * **Loss Function:** Categorical Crossentropy
+  * **Optimizer:** Adam
+* **Purpose:** Classifies heartbeat segments into normal or arrhythmic classes
+* **Classes Detected:**
+  * **Normal**
+  * **Atrial Fibrillation (AFib)**
+  * **Other**
 
 The model is loaded once at startup and performs **real-time inference** on segmented beats during playback. Its predictions are then used to update the diagnosis label on the GUI and may influence alarm behavior (e.g., suppressing alarms during AFib to avoid over-triggering).
 
@@ -115,7 +125,7 @@ The system continuously evaluates incoming ECG segments during playback and adap
         <br />
         <sub><b>Mazen Marwan</b></sub>
       </a>
-    </td>    
+    </td>
     <td align="center">
       <a href="https://github.com/madonna-mosaad" target="_blank">
         <img src="https://avatars.githubusercontent.com/u/127048836?v=4" width="150px;" alt="Madonna Mosaad"/>
@@ -137,14 +147,14 @@ The system continuously evaluates incoming ECG segments during playback and adap
         <br />
         <sub><b>Mohamed Yasser</b></sub>
       </a>
-    </td>    
+    </td>
       <td align="center">
       <a href="https://github.com/yousseftaha167" target="_blank">
         <img src="https://avatars.githubusercontent.com/u/128304243?v=4" width="150px;" alt="Youssef Taha"/>
         <br />
         <sub><b>Youssef Taha</b></sub>
       </a>
-    </td>    
+    </td>
   </tr>
 </table>
 </div>
